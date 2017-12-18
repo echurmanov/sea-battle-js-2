@@ -8,14 +8,60 @@
         height: 24px;
       }
 
+      td:hover {
+        background-color: #09e9ff;
+        cursor: pointer;
+      }
+
       table {
         border-spacing: 0;
       }
+
+      .wrapper {
+        display: flex;
+
+        justify-content: space-around;
+      }
+
+      .wrapper > div {
+        flex-shrink: 0;
+      }
+
+      .wrapper-v {
+        display: flex;
+
+        flex-direction: column;
+        justify-content: center;
+
+        height: 100%;
+      }
+
+      .miss {
+        background-color: #00a0ff;
+      }
+
+      .friend {
+        background-color: green;
+      }
+
+      .damaged {
+        background-color: #cc0000;
+      }
+
+      .dead {
+        background-color: #660000;
+      }
+
+
     </style>
   </head>
   <body>
-    <div id="field-1"></div>
-    <div id="field-2"></div>
+    <div class="wrapper-v">
+      <div class="wrapper">
+        <div id="field-1"></div>
+        <div id="field-2"></div>
+      </div>
+    </div>
     <script>
       init();
     </script>
