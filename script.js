@@ -21,6 +21,9 @@ function Game(field1, field2){
 
   this.playerTurn = true;
 
+  this.status = 'play';
+  this.winner = '';
+
   for (let i = 0; i < this.size; i++) {
     data1.push([]);
     data2.push([]);
@@ -64,7 +67,7 @@ function Game(field1, field2){
 
       let s = 1;
       while (searchDirs.length) {
-        searchDirs.forEach(function(dir) {
+        searchDirs.slice().forEach(function(dir) {
           let dx = x, dy = y;
           switch (dir) {
             case 0:
@@ -102,13 +105,33 @@ function Game(field1, field2){
       if (isDead) {
         shipCells.forEach(function(shipCell){
           fieldData[shipCell.x][shipCell.y] = SHIP_DEAD;
-          console.log(123);
           self.getNearCell(fieldData, shipCell.x, shipCell.y).forEach(function(nc){
             if (fieldData[nc.x][nc.y] === EMPTY) {
               fieldData[nc.x][nc.y] = MISS;
             }
           });
         });
+      }
+
+      let allShipIsDead = true;
+
+      for(let a=0;a<this.size && allShipIsDead;a++) {
+        for (let b = 0; b <= this.size && allShipIsDead; b++) {
+          if (fieldData[a][b] === SHIP) {
+            allShipIsDead = false;
+          }
+        }
+      }
+
+      if (allShipIsDead) {
+        this.status = 'end';
+        if (fieldData === data1) {
+          this.winner = 'CPU Win!';
+        } else {
+          this.winner = 'Player Win!';
+        }
+
+        alert(this.winner);
       }
 
     }
@@ -196,7 +219,7 @@ function Game(field1, field2){
   };
 
   this.cpuTurn = function() {
-    if (this.playerTurn) {
+    if (this.playerTurn || this.status === 'end') {
       return;
     }
     let i = 1000, x, y;
@@ -212,7 +235,7 @@ function Game(field1, field2){
     if (!this.playerTurn) {
       setTimeout(function(){
         self.cpuTurn();
-      }, 4000);
+      }, 1000);
     }
 
   };
@@ -297,6 +320,14 @@ function Game(field1, field2){
 }
 
 
+const coords = {left: 0, top: 0};
+
+function launchRocker(x, y) {
+
+  createjs.Tween.get(coords)
+    .to({ left: x, top: y }, 1000, createjs.Ease.getElasticOut(4, 2));
+}
+
 
 function init() {
   console.log("Start");
@@ -306,8 +337,20 @@ function init() {
     document.getElementById('field-2')
   );
 
-
-
   game.render();
+
+  document.addEventListener('click', function(e) {
+    console.log(e);
+    launchRocker(e.clientX, e.clientY);
+  });
+
+  const rocket = document.querySelector(".ball");
+
+  createjs.Ticker.setFPS(60);
+  createjs.Ticker.addEventListener("tick", function(t) {
+    console.log("tick", t, coords);
+    rocket.style.left = coords.left;
+    rocket.style.top = coords.top;
+  });
 
 }
