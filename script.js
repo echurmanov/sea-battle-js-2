@@ -35,18 +35,21 @@ function Game(field1, field2){
 
   const self = this;
 
-  field2.addEventListener('click', function(e) {
+  field2.addEventListener('click', (e) => {
     if (e.target.tagName === 'TD' && e.target.attributes.getNamedItem("x")) {
       const x = 1 * e.target.attributes.getNamedItem("x").nodeValue;
       const y = 1 * e.target.attributes.getNamedItem("y").nodeValue;
 
       if (self.playerTurn) {
-        self.shoot(data2, x, y);
-        self.render();
-        self.cpuTurn();
+        const targetCoord = e.target.getBoundingClientRect();
+        launchRocker(targetCoord.left, targetCoord.top, () => {
+          this.shoot(data2, x, y);
+          this.render();
+          this.cpuTurn();
+        });
+
       }
     }
-    console.log(self);
   });
 
   this.shoot = function(fieldData, x, y) {
@@ -231,13 +234,19 @@ function Game(field1, field2){
 
     } while (!this.shoot(data1, x, y) && i > 0);
 
-    this.render();
-    if (!this.playerTurn) {
-      setTimeout(function(){
-        self.cpuTurn();
-      }, 1000);
-    }
+    const targetTd = field1.querySelector("[x=\""+x+"\"][y=\""+y+"\"]");
 
+    const targetCoord = targetTd.getBoundingClientRect();
+
+    launchRocker(targetCoord.left, targetCoord.top, function() {
+      self.render();
+
+      if (!self.playerTurn) {
+        setTimeout(function(){
+          self.cpuTurn();
+        }, 1000);
+      }
+    });
   };
 
 
@@ -322,10 +331,36 @@ function Game(field1, field2){
 
 const coords = {left: 0, top: 0};
 
-function launchRocker(x, y) {
+function launchRocker(x, y, callback) {
+  const cannon = (document.getElementById("cannon")).getBoundingClientRect();
+  const rocket = document.querySelector(".ball");
 
-  createjs.Tween.get(coords)
-    .to({ left: x, top: y }, 1000, createjs.Ease.getElasticOut(4, 2));
+  rocket.style.display = 'block';
+
+  coords.top = cannon.top;
+  coords.left = cannon.left;
+
+  const object = {d: 0};
+
+  createjs.Tween.get(object)
+    .to({ d: 1 }, 500)
+    .call(afterRocket)
+    .call(callback)
+    .addEventListener('change', function (e) {
+      coords.top = cannon.top + (y - cannon.top) * object.d - 100 * Math.sin(object.d * Math.PI);
+      coords.left = cannon.left + (x - cannon.left) * object.d;
+
+    });
+}
+
+function afterRocket() {
+  const rocket = document.querySelector(".ball");
+  rocket.style.display = 'none';
+}
+
+
+function test(a, b, c) {
+  console.log(this, a, b, c, arguments);
 }
 
 
@@ -337,18 +372,22 @@ function init() {
     document.getElementById('field-2')
   );
 
+  const t1 = test.bind(this);
+
+  t1("3", "4");
+
   game.render();
 
   document.addEventListener('click', function(e) {
     console.log(e);
-    launchRocker(e.clientX, e.clientY);
+
   });
 
   const rocket = document.querySelector(".ball");
 
   createjs.Ticker.setFPS(60);
   createjs.Ticker.addEventListener("tick", function(t) {
-    console.log("tick", t, coords);
+    //console.log("tick", t, coords);
     rocket.style.left = coords.left;
     rocket.style.top = coords.top;
   });
