@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ball</title>
+    <meta charset="utf-8"/>
+  </head>
+  <body>
+    <canvas id="space-zone" width="400" height="400" style="border: 1px solid black">No canvas, sorry =(</canvas>
+    <script>
+      'use strict';
+
+
+      function Vector(x, y) {
+        Object.defineProperties(this, {
+          x: {
+            value: x,
+            writable: false
+          },
+          y: {
+            value: y,
+            writable: false
+          }
+        });
+      }
+
+      Vector.prototype = Object.create(Object.prototype);
+
+      Vector.prototype.constructor = Vector;
+
+      Vector.prototype.setX = function(x) {
+        return new Vector(x, this.y);
+      };
+
+      Vector.prototype.setY = function(y) {
+        return new Vector(this.x, y);
+      };
+
+      Vector.prototype.add = function(vector) {
+        return new Vector(this.x + vector.x, this.y + vector.y);
+      };
+
+      Vector.prototype.scalar = function(s) {
+        return new Vector(this.x * s, this.y * s);
+      };
+
+
+
+      function Ball(ctx, color) {
+        this.position = new Vector(0, 0);
+        this.velocity = new Vector(0, 0);
+
+        this.color = color;
+        this.context = ctx;
+      }
+
+      Ball.prototype = Object.create(Object.prototype);
+
+      Ball.prototype.constructor = Ball;
+
+      Ball.prototype.draw = function() {
+        this.context.beginPath();
+        this.context.fillStyle = this.color;
+        this.context.arc(this.position.x, this.position.y, 15, 0, Math.PI * 2, false);
+        this.context.stroke();
+        this.context.fill();
+      };
+
+      Ball.prototype.update = function(dt, canvas) {
+        this.velocity = this.velocity.add(new Vector(0, 200 * dt / 1000));
+        this.position = this.position.add(this.velocity.scalar(dt / 1000));
+
+        if (this.position.y > canvas.height - 15) {
+          this.position = this.position.setY(canvas.height - 15);
+          this.velocity = this.velocity.setY(-1 * this.velocity.y * 0.8);
+        }
+
+        if (this.position.x > canvas.width - 15) {
+          this.position = this.position.setX(canvas.width - 15);
+          this.velocity = this.velocity.setX(-1 * this.velocity.x * 0.8);
+        }
+
+        if (this.position.x < 15) {
+          this.position = this.position.setX(15);
+          this.velocity = this.velocity.setX(-1 * this.velocity.x * 0.8);
+        }
+
+      };
+
+      function Rect(ctx, color) {
+        Ball.prototype.constructor.call(this, ctx, color);
+      }
+
+      Rect.prototype = Object.create(Ball.prototype);
+      Rect.prototype.constructor = Rect;
+
+      Rect.prototype.draw = function() {
+        this.context.fillStyle = this.color;
+        this.context.fillRect(this.position.x-15, this.position.y-15, 30, 30);
+      };
+
+      (function(){
+        let lastDrawTime = new Date();
+        const balls = [];
+
+        function drawScene() {
+          const dt = (new Date()) - lastDrawTime;
+
+          lastDrawTime = new Date();
+          context.fillStyle = '#aaaadd';
+          context.fillRect(0, 0, canvas.width, 400);
+
+          balls.forEach(ball => {
+            ball.update(dt, canvas);
+            ball.draw();
+          });
+
+
+          requestAnimationFrame(drawScene);
+        }
+
+        const canvas = document.getElementById('space-zone');
+        const context = canvas.getContext('2d');
+
+
+
+        for (let i = 0; i < 5; i++) {
+          const ball = new Ball(context, 'green');
+
+          ball.position = new Vector(Math.random() * 200 + 100, Math.random() * 200);
+          ball.velocity = new Vector(Math.random() * 400 - 200, Math.random() * 400 - 200);
+
+          balls.push(ball);
+        }
+
+        for (let i = 0; i < 5; i++) {
+          const rect = new Rect(context, 'red');
+
+          rect.position = new Vector(Math.random() * 200 + 100, Math.random() * 200);
+          rect.velocity = new Vector(Math.random() * 400 - 200, Math.random() * 400 - 200);
+
+          balls.push(rect);
+        }
+
+        requestAnimationFrame(drawScene);
+
+      })();
+
+    </script>
+  </body>
+</html>

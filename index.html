@@ -1,87 +1,195 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <script src="tweenjs.js"></script>
-    <script src="script.js"></script>
-    <style>
-      td {
-        border: 1px solid black;
-        width: 24px;
-        height: 24px;
-      }
-
-      td:hover {
-        background-color: #09e9ff;
-        cursor: pointer;
-      }
-
-      table {
-        border-spacing: 0;
-      }
-
-      .wrapper {
-        display: flex;
-
-        justify-content: space-around;
-      }
-
-      .wrapper > div {
-        flex-shrink: 0;
-      }
-
-      .wrapper-v {
-        display: flex;
-
-        flex-direction: column;
-        justify-content: center;
-
-        height: 100%;
-      }
-
-      .miss {
-        background-color: #00a0ff;
-      }
-
-      .friend {
-        background-color: green;
-      }
-
-      .damaged {
-        background-color: #cc0000;
-      }
-
-      .dead {
-        background-color: #660000;
-      }
-
-      .ball {
-        position: absolute;
-        width: 25px;
-        height: 25px;
-        border-radius: 12px;
-        background-color: #660000;
-      }
-
-      #cannon{
-        width: 20px;
-        height: 20px;
-        background-color: #660000;
-      }
-
-    </style>
+    <title>Space</title>
+    <meta charset="utf-8"/>
   </head>
   <body>
-  <div class="ball">
-
-  </div>
-    <div class="wrapper-v">
-      <div class="wrapper">
-        <div id="field-1"></div>
-        <div id="cannon"></div>
-        <div id="field-2"></div>
-      </div>
-    </div>
+    <canvas id="space-zone" width="400" height="400">No canvas, sorry =(</canvas>
     <script>
-      init();
+      'use strict';
+
+      function Vector(x, y) {
+
+
+        Object.defineProperties(this, {
+          x: {
+            writable: false,
+            value: x
+          },
+          y: {
+            writable: false,
+            value: y
+          }
+        });
+      }
+
+      Vector.prototype = Object.create(Object.prototype);
+
+      Vector.prototype.constructor = Vector;
+
+      Vector.prototype.get = function () {
+        return {x: this.x, y: this.y};
+      };
+
+      Vector.prototype.set = function (x, y) {
+        return new Vector(x, y);
+      };
+
+      Vector.prototype.setX = function (x) {
+        return new Vector(x, this.y);
+      };
+
+      Vector.prototype.setY = function (y) {
+        return new Vector(this.x, y);
+      };
+
+      Vector.prototype.scalarMult = function (s) {
+        return new Vector(this.x * s, this.y * s);
+      };
+
+      Vector.prototype.getLength = function() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+      };
+
+      Vector.prototype.add = function(vector) {
+        return new Vector(this.x + vector.x, this.y + vector.y);
+      };
+
+      Vector.prototype.sub = function(vector) {
+        return new Vector(this.x - vector.x, this.y - vector.y);
+      };
+
+
+
+      function Actor(drawCtx, color) {
+        this.drawCtx = drawCtx;
+        this.color = color;
+        this.acc = new Vector(0 ,0);
+        this.position = new Vector(0, 0);
+        this.velocity = new Vector(0, 0);
+        this.lastPositions = [];
+      }
+
+      Actor.prototype = Object.create(Object.prototype);
+
+      Actor.prototype.constructor = Actor;
+
+      Actor.prototype.draw = function() {
+        this.drawCtx.beginPath();
+        this.drawCtx.arc(this.position.x, this.position.y, 5, 0, 2 * Math.PI, false);
+        this.drawCtx.fillStyle = this.color;
+        this.drawCtx.strokeStyle = this.color;
+        this.drawCtx.fill();
+        this.drawCtx.stroke();
+
+        this.drawCtx.beginPath();
+        this.drawCtx.moveTo(this.position.x, this.position.y);
+        this.drawCtx.lineTo(this.position.x + this.velocity.x, this.position.y + this.velocity.y);
+        this.drawCtx.strokeStyle = 'green';
+        this.drawCtx.stroke();
+
+        this.drawCtx.beginPath();
+
+        this.drawCtx.moveTo(this.position.x, this.position.y);
+        this.drawCtx.lineTo(this.position.x + this.acc.x, this.position.y + this.acc.y);
+        this.drawCtx.strokeStyle = 'blue';
+        this.drawCtx.stroke();
+
+        this.lastPositions.push(this.position);
+        if (this.lastPositions.length > 500) {
+          this.lastPositions.shift();
+        }
+
+        this.drawCtx.beginPath();
+
+        this.drawCtx.moveTo(this.lastPositions[0].x, this.lastPositions[0].y);
+
+        this.lastPositions.forEach(pos => this.drawCtx.lineTo(pos.x, pos.y));
+
+        this.drawCtx.strokeStyle = 'black';
+        this.drawCtx.stroke();
+
+      };
+
+
+
+
+
+      (function(){
+        const canvas = document.getElementById('space-zone');
+        const ctx = canvas.getContext('2d');
+
+        const actors = [];
+
+        const actor1 = new Actor(ctx, 'red');
+
+        actor1.position = new Vector(0, 200);
+        actor1.velocity = new Vector(0, 50);
+
+        actors.push(actor1);
+
+        for (let i = 0; i < 5; i++) {
+          const actor = new Actor(ctx, 'green');
+          actor.position = new Vector(Math.random() * 400, Math.random() * 400);
+          actor.velocity = new Vector(Math.random() * 200 - 100, Math.random() * 200 - 100);
+
+          actors.push(actor);
+        }
+
+
+        function updateActors(dt) {
+          const timePart = dt / 1000;
+          actors.forEach((actor) => {
+            const gravityVector = (new Vector(200, 200)).sub(actor.position);
+            const gvLength = gravityVector.getLength();
+
+            if (gvLength > 1) {
+              const gravityForce = gravityVector.scalarMult(1 / gvLength)
+                .scalarMult((250 * 250) / (gvLength * gvLength))
+                .scalarMult(30);
+
+              actor.acc = gravityForce;
+              actor.velocity = actor.velocity.add(gravityForce.scalarMult(timePart));
+            }
+
+            actor.position = actor.position.add(actor.velocity.scalarMult(timePart));
+          });
+        }
+
+        let lastDate = new Date();
+
+        function drawScene() {
+          ctx.fillStyle = '#aaaadd';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+          ctx.arc(200, 200, 20, 0, 2 * Math.PI, false);
+          ctx.fillStyle = 'green';
+          ctx.strokeStyle = 'green';
+          ctx.fill();
+          ctx.stroke();
+
+          let dt = (new Date()) - lastDate;
+          lastDate = new Date();
+
+          if (dt > 500) {
+            dt = 500;
+          }
+
+          for (let pDt = 0; pDt < dt; pDt += 5) {
+            updateActors(Math.min(dt - pDt, 5));
+          }
+
+          actors.forEach(actor => actor.draw());
+
+          requestAnimationFrame(drawScene);
+        }
+
+
+        requestAnimationFrame(drawScene);
+      })();
+
+
     </script>
   </body>
 </html>
